@@ -21,6 +21,7 @@ import FastImage from 'react-native-fast-image';
 import Tombol from '../../komponen/Tombol';
 import TanyakanWA from '../../fungsi/TanyakanWA';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import ShareImg from '../../komponen/ShareImg';
 
 const lebar = Dimensions.get('window').width;
 
@@ -35,6 +36,8 @@ const ProdukSatuanDetail = ({navigation, route}) => {
   const [listImg, setListImg] = useState([]);
   const [indexImg, setIndexImg] = useState(0);
   const [showDetail, setShowDetail] = useState(false);
+  const [mainImage, setMainImage] = useState(null);
+  const [tampilShoot, setTampilShoot] = useState(false);
 
   React.useEffect(() => {
     getDt();
@@ -73,6 +76,9 @@ const ProdukSatuanDetail = ({navigation, route}) => {
     refImg
       .getDownloadURL()
       .then(url => {
+        if (listImg.length === 0) {
+          setMainImage({uri: url});
+        }
         setListImg(prev => [...prev, {id: imgID, url: url}]);
         imgID++;
       })
@@ -89,7 +95,7 @@ const ProdukSatuanDetail = ({navigation, route}) => {
     if (!('ongkir' in user)) {
       Alert.alert(
         'PERHATIAN',
-        'Sebelum membeli pastikan anda sudah mengatur alamat pengiriman untuk menentukan ongkos kirim. Silahkan atur alamat kirim untuk melanjutkan proses Beli',
+        'Untuk bertransaksi, silahkan atur alamat anda',
         [
           {
             text: 'Cancel',
@@ -106,7 +112,7 @@ const ProdukSatuanDetail = ({navigation, route}) => {
       );
       return;
     }
-    if (user.ongkir === 0) {
+    if (user.ongkir == 0) {
       Alert.alert(
         'PERHATIAN',
         'Alamat pengiriman anda belum terjangkau. silahkan hubungi Admin',
@@ -118,7 +124,9 @@ const ProdukSatuanDetail = ({navigation, route}) => {
           {
             text: 'OK',
             onPress: () => {
-              tanyaAdmin();
+              tanyaAdmin(
+                `${user.kotaNama} - ${user.kotaID} belum terjangkau pengiriman`,
+              );
             },
           },
         ],
@@ -148,17 +156,31 @@ const ProdukSatuanDetail = ({navigation, route}) => {
   }
 
   function membeli() {
+    const newTransaksi = database().ref('/transaksiKoi').push();
+    const newKey = newTransaksi.key;
+    const inDt = {
+      userID: user.uid,
+      userNama: user.displayName,
+      status: 'proses',
+      produkID: produkID,
+      produkNama: tbData.nama,
+      harga: tbData.harga,
+      ongkir: user.ongkir,
+      txDate: new Date().getTime(),
+    };
+    newTransaksi
+      .set(inDt)
+      .then(() => updateTbKoi(newKey))
+      .catch(e => console.log(e));
+  }
+
+  function updateTbKoi(txID) {
     const refProduk = database().ref('/produkSatuan/' + produkID);
     refProduk
-      .update({
-        status: 'habis',
-        pembeliID: user.uid,
-        pembeliNama: user.displayName,
-        ongkir: user.ongkir,
-        proses: 'proses',
-        txDate: new Date().getTime(),
-      })
-      .then(() => navigation.replace('TransaksiDetail', {produkID: produkID}));
+      .update({status: 'habis'})
+      .then(() =>
+        navigation.replace('TransaksiDetail', {produkID: produkID, txID: txID}),
+      );
   }
 
   function handleShowDetail(i) {
@@ -212,9 +234,13 @@ const ProdukSatuanDetail = ({navigation, route}) => {
             <View style={styles.row}>
               <Text>Harga: Rp{ribuan(tbData.harga)}</Text>
               {'ongkir' in user ? (
-                <Text>Ongkir: Rp{ribuan(user.ongkir)}</Text>
+                user.ongkir ? (
+                  <Text>Ongkir: Rp{ribuan(user.ongkir)}</Text>
+                ) : (
+                  <Text style={{color: 'red'}}>Ongkir: diluar jangkauan</Text>
+                )
               ) : (
-                <Text>Ongkir: Belum diatur</Text>
+                <Text style={{color: 'red'}}>Ongkir: Belum diatur</Text>
               )}
             </View>
             <Text style={styles.harga}>
@@ -234,17 +260,17 @@ const ProdukSatuanDetail = ({navigation, route}) => {
             style={{
               flexDirection: 'row',
               justifyContent: 'space-between',
-              padding: 20,
+              padding: 10,
             }}>
             <View style={styles.contTombol}>
               <Tombol
-                text="CEK ONGKIR"
-                warna={Konstanta.warna.dua}
-                onPress={() => navigation.navigate('Ongkir')}
+                text="SHARE"
+                warna={'skyblue'}
+                onPress={() => setTampilShoot(true)}
               />
             </View>
             <View style={styles.contTombol}>
-              <Tombol text="TANYAKAN" warna={'green'} onPress={tanyaAdmin} />
+              <Tombol text="WA ADMIN" warna={'green'} onPress={tanyaAdmin} />
             </View>
             <View style={styles.contTombol}>
               <Tombol
@@ -255,6 +281,15 @@ const ProdukSatuanDetail = ({navigation, route}) => {
             </View>
           </View>
         </View>
+        {tampilShoot && (
+          <ShareImg
+            src={mainImage}
+            keterangan={`dapatkan ${tbData.nama} dengan harga ${ribuan(
+              tbData.harga,
+            )} di aplikasi Jawa Koi Center \nhttps://google.com`}
+            setSelesai={setTampilShoot}
+          />
+        )}
       </ScrollView>
       <Modal
         visible={showDetail}

@@ -2,7 +2,14 @@ import React from 'react';
 import {StyleSheet, Text, View, TouchableOpacity} from 'react-native';
 import Konstanta from './Konstanta';
 import Icon from 'react-native-vector-icons/FontAwesome';
-const Headerku = ({judul, icon, badgeValue, komponenKiri, onPressKanan}) => {
+const Headerku = ({
+  judul,
+  icon,
+  badgeValue,
+  tKanan,
+  komponenKiri,
+  onPressKanan,
+}) => {
   return (
     <View style={styles.container}>
       <View style={styles.kiri}>{komponenKiri}</View>
@@ -16,6 +23,9 @@ const Headerku = ({judul, icon, badgeValue, komponenKiri, onPressKanan}) => {
             <View style={[styles.badge, {backgroundColor: 'green'}]}>
               <Text style={styles.tBadge}>{badgeValue}</Text>
             </View>
+          )}
+          {tKanan && (
+            <Text style={{fontWeight: 'bold', color: 'white'}}>{tKanan}</Text>
           )}
         </TouchableOpacity>
       </View>

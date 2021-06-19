@@ -134,8 +134,8 @@ android {
         applicationId "com.vmdev.gatotkaca"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 16
-        versionName "1.6"
+        versionCode 20
+        versionName "2.0"
         multiDexEnabled true
     }
     splits {

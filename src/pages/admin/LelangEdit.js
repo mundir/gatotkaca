@@ -88,8 +88,6 @@ const LelangEdit = ({navigation, route}) => {
       console.log(hasil);
       setTbData({
         ...hasil,
-        openBid: hasil.openBid.toString(),
-        kelipatan: hasil.kelipatan.toString(),
         id: snapshot.key,
       });
       updateStatus(hasil.status);
@@ -181,12 +179,15 @@ const LelangEdit = ({navigation, route}) => {
       .update({
         nama: tbData.nama,
         jenis: tbData.jenis,
-        openBid: Number(tbData.openBid),
-        lastBid: Number(tbData.openBid),
-        kelipatan: Number(tbData.kelipatan),
+        ytb: tbData.ytb,
+        openBid: tbData.openBid,
+        lastBid: tbData.lastBid,
+        kelipatan: tbData.kelipatan,
         mulai: moment(tbData.mulai).toISOString(),
         selesai: moment(tbData.selesai).toISOString(),
         status: tbData.status,
+        deskripsi: tbData.deskripsi,
+        updateOn: new Date().getTime(),
       })
       .then(() => {
         setTProses(prev => prev + 'SUKSES');
@@ -230,16 +231,27 @@ const LelangEdit = ({navigation, route}) => {
             onChangeText={text => updateTbData('jenis', text)}
           />
           <Input
+            label="Link Youtube"
+            value={tbData.ytb}
+            onChangeText={text => updateTbData('ytb', text)}
+          />
+          <Input
             label="OpenBid"
             keyboardType="number-pad"
-            value={tbData.openBid}
-            onChangeText={text => updateTbData('openBid', text)}
+            value={'' + tbData.openBid}
+            onChangeText={text => updateTbData('openBid', Number(text))}
+          />
+          <Input
+            label="LastBid"
+            keyboardType="number-pad"
+            value={'' + tbData.lastBid}
+            onChangeText={text => updateTbData('lastBid', Number(text))}
           />
           <Input
             label="Kelipatan"
             keyboardType="number-pad"
-            value={tbData.kelipatan}
-            onChangeText={text => updateTbData('kelipatan', text)}
+            value={'' + tbData.kelipatan}
+            onChangeText={text => updateTbData('kelipatan', Number(text))}
           />
 
           <View style={[styles.row, {justifyContent: 'flex-end'}]}>

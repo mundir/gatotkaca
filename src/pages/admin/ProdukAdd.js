@@ -37,6 +37,7 @@ const ProdukAdd = () => {
       kategori: nilaiKategori,
       harga: 0,
       stok: 0,
+      terjual: 0,
       deskripsi: '',
       status: btStatus[btStatusIdx],
       createdOn: new Date().getTime(),

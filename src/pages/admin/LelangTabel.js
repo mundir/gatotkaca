@@ -7,7 +7,10 @@ import {
   Image,
   Alert,
   RefreshControl,
+  Linking,
+  TouchableOpacity,
 } from 'react-native';
+import moment from 'moment';
 import {Icon, FAB} from 'react-native-elements';
 import CardList from '../../komponen/CardList';
 import {ribuan} from '../../fungsi/Fungsi';
@@ -25,7 +28,6 @@ const LelangTabel = ({navigation}) => {
 
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
-    setTbData([]);
     getDt(true);
   }, []);
 
@@ -37,22 +39,26 @@ const LelangTabel = ({navigation}) => {
 
   function getDt(mm) {
     const dbRef = database().ref('/lelang');
-    dbRef.once('value').then(snapshot => {
-      if (snapshot.exists()) {
-        snapshot.forEach(async res => {
-          const tref = 'produk/' + res.key + '/detail0.jpg';
-          try {
-            const url = await storage().ref(tref).getDownloadURL();
-            const inDt = {...res.val(), id: res.key, src: url};
-            if (mm) setTbData(prev => [...prev, inDt]);
-          } catch (error) {
-            console.log(error);
-          }
-        });
-      }
-      setIsLoading(false);
-      setRefreshing(false);
-    });
+    dbRef
+      .orderByChild('updateOn')
+      .once('value')
+      .then(snapshot => {
+        if (snapshot.exists()) {
+          setTbData([]);
+          snapshot.forEach(async res => {
+            const tref = 'produk/' + res.key + '/detail0.jpg';
+            try {
+              const url = await storage().ref(tref).getDownloadURL();
+              const inDt = {...res.val(), id: res.key, src: url};
+              if (mm) setTbData(prev => [...prev, inDt]);
+            } catch (error) {
+              console.log(error);
+            }
+          });
+        }
+        setIsLoading(false);
+        setRefreshing(false);
+      });
   }
 
   function menghapus(nama, id) {
@@ -100,7 +106,6 @@ const LelangTabel = ({navigation}) => {
       />
       <FAB
         title="+"
-        placement="right"
         color="blue"
         onPress={() => navigation.navigate('LelangAdd')}
       />
@@ -121,7 +126,7 @@ const Item = ({data, onEdit, onHapus}) => {
         <View style={styles.imgWrap}>
           <Image
             source={data.src ? {uri: data.src} : noImage}
-            style={{width: 110, height: 110}}
+            style={{width: 110, height: 130}}
           />
         </View>
         <View style={{flex: 1}}>
@@ -138,6 +143,20 @@ const Item = ({data, onEdit, onHapus}) => {
             </Text>
           </View>
           <View style={styles.tr}>
+            <Text style={styles.tLabel}>Youtube</Text>
+            {data.ytb ? (
+              <TouchableOpacity
+                style={{backgroundColor: 'red', paddingHorizontal: 10}}
+                onPress={() => {
+                  Linking.openURL(data.ytb);
+                }}>
+                <Text style={[styles.tValue, {color: 'white'}]}>ADA</Text>
+              </TouchableOpacity>
+            ) : (
+              <Text style={styles.tValue}>Tidak Ada</Text>
+            )}
+          </View>
+          <View style={styles.tr}>
             <Text style={styles.tLabel}>Open BID</Text>
             <Text selectable style={styles.tValue}>
               {ribuan(data.openBid)}
@@ -150,6 +169,18 @@ const Item = ({data, onEdit, onHapus}) => {
           <View style={styles.tr}>
             <Text style={styles.tLabel}>Kelipatan</Text>
             <Text style={styles.tValue}>{ribuan(data.kelipatan)}</Text>
+          </View>
+          <View style={styles.tr}>
+            <Text style={styles.tLabel}>Mulai</Text>
+            <Text style={styles.tValue}>
+              {moment(data.mulai).format('DD/MM/YY HH:mm')}
+            </Text>
+          </View>
+          <View style={styles.tr}>
+            <Text style={styles.tLabel}>Selesai</Text>
+            <Text style={styles.tValue}>
+              {moment(data.selesai).format('DD/MM/YY HH:mm')}
+            </Text>
           </View>
           <View style={styles.tr}>
             <Text style={styles.tLabel}>Status</Text>

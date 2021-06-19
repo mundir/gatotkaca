@@ -20,7 +20,6 @@ import {
   CheckBox,
 } from 'react-native-elements';
 import noImage from '../../assets/noImage.jpg';
-import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
 import Konstanta from '../../fungsi/Konstanta';
 import database from '@react-native-firebase/database';
 import storage from '@react-native-firebase/storage';
@@ -221,7 +220,7 @@ const KoiEdit = ({navigation, route}) => {
           <Input
             label="Link Youtube"
             value={tbData.linkYoutube}
-            onChangeText={text => updateTbData('linkYotube', text)}
+            onChangeText={text => updateTbData('linkYoutube', text)}
           />
 
           <Text style={styles.label}>Status: {tbData.status}</Text>

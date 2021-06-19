@@ -10,13 +10,16 @@ import {AuthContext} from './AuthProvider';
 
 const FrbTrDetailKoi = ({navigation, route}) => {
   const produkID = route.params.produkID;
+  const txID = route.params.txID;
   const {user} = React.useContext(AuthContext);
 
   const [tbData, setTbData] = useState({});
+  const [dtTransaksi, setDtTransaksi] = useState({});
   const [dtInfo, setDtInfo] = useState('');
 
   useEffect(() => {
     getDt();
+    getDtTransaksi();
     getInfo();
   }, []);
 
@@ -26,6 +29,14 @@ const FrbTrDetailKoi = ({navigation, route}) => {
       .once('value')
       .then(snapshot => {
         setTbData(snapshot.val());
+      });
+  }
+  function getDtTransaksi() {
+    database()
+      .ref('/transaksiKoi/' + txID)
+      .once('value')
+      .then(snapshot => {
+        setDtTransaksi(snapshot.val());
       });
   }
 
@@ -53,22 +64,11 @@ const FrbTrDetailKoi = ({navigation, route}) => {
       });
   };
 
-  function batalkan(id) {
-    Alert.alert('PERHATIAN', 'Apakah yakin akan membatalkan transaksi ini?', [
-      {
-        text: 'Cancel',
-        style: 'cancel',
-      },
-      {
-        text: 'OK',
-        onPress: () => {
-          const tbRef = database().ref('/produkSatuan/' + id);
-          tbRef
-            .update({status: 'ready', proses: 'batal'})
-            .then(() => navigation.navigate('FrbTrKoi'));
-        },
-      },
-    ]);
+  function terima() {
+    const tbRef = database().ref('/transaksiKoi/' + txID);
+    tbRef
+      .update({status: 'selesai'})
+      .then(() => navigation.navigate('FrbTrKoi'));
   }
 
   return (
@@ -89,12 +89,12 @@ const FrbTrDetailKoi = ({navigation, route}) => {
           </View>
           <View style={styles.row}>
             <Text>Ongkir :</Text>
-            <Text>{ribuan(tbData.ongkir)}</Text>
+            <Text>{ribuan(dtTransaksi.ongkir)}</Text>
           </View>
           <View style={styles.row}>
             <Text>Total Bayar :</Text>
             <Text style={{fontWeight: 'bold', color: Konstanta.warna.satu}}>
-              {ribuan(tbData.ongkir + tbData.harga)}
+              {ribuan(dtTransaksi.ongkir + tbData.harga)}
             </Text>
           </View>
         </View>
@@ -104,20 +104,23 @@ const FrbTrDetailKoi = ({navigation, route}) => {
           </View>
           <Text>{tbData.deskripsi}</Text>
         </View>
-        <View style={styles.card}>
-          <View style={styles.contJudul}>
-            <Text style={styles.judul}>Info Transaksi</Text>
+        {dtTransaksi.status === 'proses' && (
+          <View style={styles.card}>
+            <View style={styles.contJudul}>
+              <Text style={styles.judul}>Info Transaksi</Text>
+            </View>
+            <Text>{dtInfo}</Text>
           </View>
-          <Text>{dtInfo}</Text>
-        </View>
+        )}
         <View style={{height: 20}} />
         <View style={styles.card}>
-          {tbData.proses === 'proses' && (
-            <View style={styles.row}>
+          {dtTransaksi.status === 'proses' && (
+            <View
+              style={{flexDirection: 'row', justifyContent: 'space-between'}}>
               <Tombol
-                text="Cek Ongkir"
+                text="INFO PEMBAYARAN"
                 warna="#075E54"
-                onPress={() => navigation.navigate('Ongkir')}
+                onPress={() => navigation.navigate('Pembayaran')}
               />
               <Tombol
                 text="Konf WA"
@@ -125,32 +128,27 @@ const FrbTrDetailKoi = ({navigation, route}) => {
                 onPress={wa}
                 marginHorizontal={5}
               />
-              {user.isAdmin && (
-                <Tombol
-                  text="Batalkan"
-                  warna="red"
-                  onPress={() => batalkan(produkID)}
-                />
-              )}
             </View>
           )}
-          {tbData.proses === 'kirim' && (
+          {dtTransaksi.status === 'kirim' && (
             <View style={{alignItems: 'center'}}>
               <Text>Produk sedang dalam proses pengiriman.</Text>
-              <Text>Jika produk sudah anda terima, klik tombol TERIMA</Text>
+              <Text style={{marginBottom: 5}}>
+                Jika produk sudah anda terima, klik tombol TERIMA
+              </Text>
               <Tombol
                 text="TERIMA"
                 warna={Konstanta.warna.dua}
-                onPress={() => navigation.navigate('FrbTrKoi')}
+                onPress={terima}
               />
             </View>
           )}
-          {tbData.proses === 'selesai' && (
+          {dtTransaksi.status === 'selesai' && (
             <View style={{alignItems: 'center'}}>
               <Text>Transaksi Selesai</Text>
             </View>
           )}
-          {tbData.proses === 'batal' && (
+          {dtTransaksi.status === 'batal' && (
             <View style={{alignItems: 'center'}}>
               <Text>Transaksi Batal</Text>
             </View>
@@ -158,11 +156,6 @@ const FrbTrDetailKoi = ({navigation, route}) => {
         </View>
 
         <View style={{height: 40}} />
-        <Tombol
-          text="OK"
-          warna={Konstanta.warna.satu}
-          onPress={() => navigation.navigate('FrbTrKoi')}
-        />
       </View>
     </ScrollView>
   );

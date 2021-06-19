@@ -6,6 +6,7 @@ import {
   Image,
   StyleSheet,
   Alert,
+  Dimensions,
 } from 'react-native';
 import {AuthContext} from '../main/AuthProvider';
 
@@ -13,12 +14,24 @@ import FormInput from '../../komponen/FormInput';
 import FormButton from '../../komponen/FormButton';
 import SocialButton from '../../komponen/SocialButton';
 import Loading from '../../komponen/Loading';
+import {tunggu} from '../../fungsi/Fungsi';
+import SplashScreen from '../../komponen/SplashScreen';
+
+const lebar = Dimensions.get('window').width;
+const tinggi = Dimensions.get('window').height;
+
 const LoginScreen = ({navigation}) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isInit, setIsInit] = useState(true);
 
   const {authLoading, emailLogin, googleLogin, fbLogin} =
     useContext(AuthContext);
+
+  React.useEffect(() => {
+    let timer1 = setTimeout(() => setIsInit(false), 1000);
+    return () => clearTimeout(timer1);
+  }, []);
 
   function melogin() {
     if (email === '') {
@@ -88,6 +101,11 @@ const LoginScreen = ({navigation}) => {
         <Text style={styles.navButtonText}>Belum punya Akun? Buat disini</Text>
       </TouchableOpacity>
       {authLoading && <Loading />}
+      {isInit && (
+        <View style={styles.splashScreen}>
+          <SplashScreen />
+        </View>
+      )}
     </View>
   );
 };
@@ -124,5 +142,14 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#2e64e5',
     fontFamily: 'Lato-Regular',
+  },
+  splashScreen: {
+    width: lebar,
+    height: tinggi,
+    // backgroundColor: 'rgba(92, 92, 92, 0.3)',
+    backgroundColor: 'white',
+    position: 'absolute',
+    left: 0,
+    top: 0,
   },
 });

@@ -11,7 +11,7 @@ const KontainerHomeLelangAkan = ({navigation}) => {
 
     const getDt = dbRef
       .orderByChild('status')
-      .equalTo('sedang')
+      .equalTo('akan')
       .on('value', snapshot => {
         if (snapshot.exists()) {
           setTbData(snapshot.val());

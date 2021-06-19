@@ -146,6 +146,10 @@ const Item = ({data, onEdit, onHapus}) => {
             <Text style={styles.tValue}>{data.stok}</Text>
           </View>
           <View style={styles.tr}>
+            <Text style={styles.tLabel}>Terjual</Text>
+            <Text style={styles.tValue}>{data.terjual}</Text>
+          </View>
+          <View style={styles.tr}>
             <Text style={styles.tLabel}>Status</Text>
             <Text style={styles.tValue}>{data.status}</Text>
           </View>

@@ -1,14 +1,15 @@
 import React, {useState, useEffect, useContext} from 'react';
-import {Alert} from 'react-native';
+import {View, Alert} from 'react-native';
 import {NavigationContainer} from '@react-navigation/native';
 import auth from '@react-native-firebase/auth';
 import database from '@react-native-firebase/database';
-// import messaging from '@react-native-firebase/messaging';
+import messaging from '@react-native-firebase/messaging';
 import {GoogleSignin} from '@react-native-google-signin/google-signin';
 import {AuthContext} from './main/AuthProvider';
 import Kosong from './main/Kosong';
 import StackAuth from './auth/StackAuth';
 import StackApp from './main/StackApp';
+
 
 const Router = () => {
   const {user, setUser} = useContext(AuthContext);
@@ -24,12 +25,12 @@ const Router = () => {
     return subcriber;
   }, []);
 
-  // useEffect(() => {
-  //   const unsubscribe = messaging().onMessage(async remoteMessage => {
-  //     Alert.alert('Info dari Admin', JSON.stringify(remoteMessage));
-  //   });
-  //   return unsubscribe;
-  // }, []);
+  useEffect(() => {
+    const unsubscribe = messaging().onMessage(async remoteMessage => {
+      Alert.alert('Info dari Admin', JSON.stringify(remoteMessage));
+    });
+    return unsubscribe;
+  }, []);
 
   const onAuthStateChanged = userFromAuth => {
     if (userFromAuth) {
@@ -59,8 +60,7 @@ const Router = () => {
               providerId,
               uid,
               isAdmin: false,
-              alamat:
-                'Segera lakukan pengaturan alamat untuk proses pengiriman',
+              alamat: '',
             };
             tbRef.set(inDt).then(() => setUser(inDt));
           }

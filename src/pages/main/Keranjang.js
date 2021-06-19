@@ -104,9 +104,16 @@ const Keranjang = ({navigation}) => {
   function tambahi(i) {
     const produkID = tbData[i].produkID;
     let qty = tbData[i].qty;
-    qty += 1;
-    updateQty(i, qty);
-    simpanQty(produkID, qty);
+    let stok = tbData[i].stok;
+    if (qty < stok) {
+      qty += 1;
+      updateQty(i, qty);
+      simpanQty(produkID, qty);
+    } else {
+      Alert.alert(
+        'anda sudah mencapai pembelian maksimal. Stok produk: ' + stok,
+      );
+    }
   }
 
   const handleInputQty = (i, t) => {
@@ -143,6 +150,14 @@ const Keranjang = ({navigation}) => {
         tempArr.splice(ix, 1);
         setTbData(tempArr);
       });
+  }
+
+  function prosesBuatPesanan() {
+    if (total) {
+      navigation.navigate('BuatPesanan');
+    } else {
+      Alert.alert('PERHATIAN', 'silahkan pilih produk untuk melanjutkan');
+    }
   }
 
   return (
@@ -218,7 +233,7 @@ const Keranjang = ({navigation}) => {
 
             <TouchableOpacity
               style={styles.tombolProses}
-              onPress={()=>navigation.navigate('BuatPesanan')}>
+              onPress={prosesBuatPesanan}>
               <Text style={styles.textTombol}>CEK PESANAN</Text>
             </TouchableOpacity>
           </View>

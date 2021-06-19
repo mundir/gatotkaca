@@ -66,6 +66,10 @@ const ItemProduk = ({datas, onDetail, onBeli}) => {
             ellipsizeMode="tail">
             {datas.nama}
           </Text>
+          <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+            <Text>Stok: {datas.stok}</Text>
+            <Text>Terjual: {datas.terjual ? datas.terjual : 0}</Text>
+          </View>
           <Text style={styles.tHarga}>Rp {ribuan(datas.harga)}</Text>
           <TouchableOpacity
             disabled={datas.status === 'habis' ? true : false}

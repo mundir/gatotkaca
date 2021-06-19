@@ -18,7 +18,7 @@ const AdminOngkir = ({navigation}) => {
   const [tbTampil, setTbTampil] = useState([]);
   const [cari, setCari] = useState('');
   const [tampilModal, setTampilModal] = useState(false);
-  const [rowData, setRowData] = useState({});
+  const [rowData, setRowData] = useState({id: '', kota: '', harga: 0});
   const [indexTerpilih, setIndexTerpilih] = useState(null);
   const [mode, setMode] = useState(null);
 
@@ -86,10 +86,11 @@ const AdminOngkir = ({navigation}) => {
   }
 
   function simpan() {
-    if (rowData.kota === '' || rowData.harga === '') {
+    if (rowData.id === '' || rowData.kota === '' || rowData.harga === 0) {
       Alert.alert('Perhatian', 'Data tidak boleh kosong!');
       return;
     }
+    rowData.id = Number(rowData.id);
     if (mode === 'edit') {
       let tmp = [...tbTampil];
       tmp[indexTerpilih] = rowData;
@@ -108,10 +109,10 @@ const AdminOngkir = ({navigation}) => {
       return;
     }
     if (mode === 'tambah') {
-      let res = rowData.kota.substring(0, 4);
-      let gId = generateid(res, 4);
+      //let res = rowData.kota.substring(0, 4);
+      //let gId = generateid(res, 4);
       database()
-        .ref('/ongkirKoi/' + gId)
+        .ref('/ongkirKoi/' + rowData.id)
         .set(rowData)
         .then(() => {
           console.log('oke');
@@ -128,7 +129,7 @@ const AdminOngkir = ({navigation}) => {
 
   function nambah() {
     setMode('tambah');
-    setRowData({});
+    setRowData({id: '', kota: '', harga: 0});
     setTampilModal(true);
   }
   return (
@@ -156,6 +157,7 @@ const AdminOngkir = ({navigation}) => {
                   borderBottomColor: 'gray',
                   borderBottomWidth: 0.7,
                 }}>
+                <Text style={[styles.name, {width: 50}]}>{v.id}</Text>
                 <Text style={styles.name}>{v.kota}</Text>
                 <Text style={styles.name}>{ribuan(v.harga)}</Text>
               </TouchableOpacity>
@@ -176,17 +178,17 @@ const AdminOngkir = ({navigation}) => {
             alignItems: 'center',
             backgroundColor: 'rgba(0,0,0,0.5)',
           }}>
-          <TouchableOpacity
-            style={{flex: 1, width: '100%'}}
-            onPress={() => setTampilModal(false)}
-          />
           <View
             style={{
               width: 300,
-              height: 300,
               backgroundColor: 'white',
               padding: 20,
             }}>
+            <Input
+              label="ID"
+              value={rowData.id}
+              onChangeText={t => setRowData(prev => ({...prev, id: t}))}
+            />
             <Input
               label="KOTA"
               value={rowData.kota}
@@ -202,10 +204,6 @@ const AdminOngkir = ({navigation}) => {
             />
             <Button title="Simpan" onPress={() => simpan('edit')} />
           </View>
-          <TouchableOpacity
-            style={{flex: 1, width: '100%'}}
-            onPress={() => setTampilModal(false)}
-          />
         </View>
       </Modal>
     </View>

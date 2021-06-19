@@ -29,9 +29,10 @@ const Setting = () => {
   const [isLoading, setIsLoading] = useState(false);
   useEffect(() => {
     getData();
-    listFilesAndDirectories(storage().ref('banner')).then(() => {
-      console.log('selesai');
-    });
+    getBanner();
+    // listFilesAndDirectories(storage().ref('banner')).then(() => {
+    //   console.log('selesai');
+    // });
   }, []);
 
   function getData() {
@@ -39,6 +40,13 @@ const Setting = () => {
     dbRef.once('value').then(snapshot => {
       setTbData(snapshot.val());
       setInfoWelcome(snapshot.val().infoWelcome);
+    });
+  }
+
+  function getBanner() {
+    const dbRef = database().ref('/banner');
+    dbRef.once('value').then(snapshot => {
+      setImgBanners(snapshot.val());
     });
   }
 
@@ -98,23 +106,33 @@ const Setting = () => {
 
   const memprosesImg = hasil => {
     if (!hasil.didCancel) {
-      let tempArr = [...imgBanners];
-      tempArr[imgIndex] = {uri: hasil.uri};
-      setImgBanners(tempArr);
-      uploadImage(hasil.uri);
+      const ast = hasil.assets[0];
+      uploadImage(ast.uri);
     }
   };
 
   async function uploadImage(uri) {
     setIsLoading(true);
     const tref = `/banner/banner${imgIndex + 1}.jpg`;
-    try {
-      await storage().ref(tref).putFile(uri);
-      Alert.alert('SUKSES', 'Suskses Upload Image');
-      setIsLoading(false);
-    } catch (error) {
-      console.log(error);
-    }
+    const stRef = storage().ref(tref);
+    await stRef.putFile(uri).catch(error => {
+      throw error;
+    });
+    const url = await stRef.getDownloadURL().catch(error => {
+      throw error;
+    });
+    console.log(url);
+    let idbanner = 'banner' + (imgIndex + 1);
+    let namabanner = 'slide' + (imgIndex + 1);
+    let tempArr = [...imgBanners];
+    tempArr[imgIndex] = {id: idbanner, img: url, nama: namabanner};
+    setImgBanners(tempArr);
+    const ref = database().ref('/banner');
+    ref
+      .set(tempArr)
+      .then(() => Alert.alert('OK', 'Sukses upload Image'))
+      .catch(e => console.log(e))
+      .finally(() => setIsLoading(false));
   }
 
   function ambilKamera() {
@@ -192,11 +210,14 @@ const Setting = () => {
             numberOfLines={4}>
             {infoWelcome.isi}
           </TextInput>
-          <Input
-            label="File Banner"
-            value={tbData.banner}
-            onChangeText={t => updateTbData('banner', t)}
-          />
+          <Text style={styles.label}>Peraturan Lelang</Text>
+          <TextInput
+            onChangeText={t => updateTbData('aturanLelang', t)}
+            style={styles.textP}
+            multiline
+            numberOfLines={4}>
+            {tbData.aturanLelang}
+          </TextInput>
           <Button title="Simpan" onPress={simpan} />
           <View style={styles.boxBanner}>
             {imgBanners.map((v, i) => {
@@ -205,7 +226,7 @@ const Setting = () => {
                   key={i}
                   onPress={() => getImg(i)}
                   style={styles.kotak}>
-                  <Image source={v} style={styles.image} />
+                  <Image source={{uri: v.img}} style={styles.image} />
                 </TouchableOpacity>
               );
             })}

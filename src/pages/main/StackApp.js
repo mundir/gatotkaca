@@ -6,7 +6,7 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import Konst from '../../fungsi/Konstanta';
 
 import FrbAkun from './FrbAkun';
-import FrbBid from './FrbBid';
+import FrbLelang from './FrbLelang';
 import FrbTrKoi from './FrbTrKoi';
 import FrbTransaksi from './FrbTransaksi';
 import ProdukSatuan from './ProdukSatuan';
@@ -35,6 +35,12 @@ import ProdukTabel from '../admin/ProdukTabel';
 import ProdukEdit from '../admin/ProdukEdit';
 import AdminOngkir from '../admin/AdminOngkir';
 import JenisKoi from '../admin/JenisKoi';
+import TransaksiTabel from '../admin/TransaksiTabel';
+import AdminHome from '../admin/AdminHome';
+import Pengguna from '../admin/Pengguna';
+import TransaksiKoiTabel from '../admin/TransaksiKoiTabel';
+import Mybid from './Mybid';
+import Pembayaran from './Pembayaran';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -56,6 +62,11 @@ const StackApp = () => {
         name="LelangDetailAkan"
         component={LelangDetailAkan}
         options={{title: 'LELANG BERIKUTNYA'}}
+      />
+      <Stack.Screen
+        name="Mybid"
+        component={Mybid}
+        options={{title: 'LELANG SAYA'}}
       />
       <Stack.Screen
         name="ProdukSatuan"
@@ -101,6 +112,18 @@ const StackApp = () => {
         name="Ongkir"
         component={Ongkir}
         options={{title: 'Ongkos Kirim'}}
+      />
+      <Stack.Screen
+        name="Pembayaran"
+        component={Pembayaran}
+        options={{title: 'Informasi Pembayaran'}}
+      />
+
+      {/* ========================================== */}
+      <Stack.Screen
+        name="AdminHome"
+        component={AdminHome}
+        options={{title: 'ADMIN'}}
       />
       <Stack.Screen name="Setting" component={Setting} />
       <Stack.Screen
@@ -158,6 +181,21 @@ const StackApp = () => {
         component={JenisKoi}
         options={{title: 'Jenis KOI'}}
       />
+      <Stack.Screen
+        name="TransaksiTabel"
+        component={TransaksiTabel}
+        options={{title: 'Tabel Transaksi'}}
+      />
+      <Stack.Screen
+        name="TransaksiKoiTabel"
+        component={TransaksiKoiTabel}
+        options={{title: 'Tabel Transaksi Koi'}}
+      />
+      <Stack.Screen
+        name="Users"
+        component={Pengguna}
+        options={{title: 'Data Pengguna'}}
+      />
     </Stack.Navigator>
   );
 };
@@ -183,7 +221,7 @@ function MyTabs() {
       />
       <Tab.Screen
         name="Lelang"
-        component={FrbBid}
+        component={FrbLelang}
         options={{
           tabBarIcon: ({color, size}) => (
             <Icon name="bitcoin" color={color} size={size} />

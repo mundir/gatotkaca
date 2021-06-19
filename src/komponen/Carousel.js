@@ -1,13 +1,25 @@
 import React, {useState, useEffect, useRef} from 'react';
-import {StyleSheet, Image, FlatList, View, Dimensions} from 'react-native';
+import {
+  StyleSheet,
+  Image,
+  FlatList,
+  View,
+  Dimensions,
+  Modal,
+  TouchableOpacity,
+} from 'react-native';
 import database from '@react-native-firebase/database';
+import ImageViewer from 'react-native-image-zoom-viewer';
 
 const lebar = Dimensions.get('window').width;
 
 const Carousel = () => {
   const [banners, setBanners] = useState([]);
+  const [bannerViewer, setBannerViewer] = useState([]);
+  const [viewerIndex, setViewerIndex] = useState(0);
   const [bannerIndex, setBannerIndex] = useState(0);
   const [tunggu, setTunggu] = useState(null);
+  const [tampilBanner, setTampilBanner] = useState(false);
 
   const indexRef = useRef();
 
@@ -21,6 +33,11 @@ const Carousel = () => {
       .once('value')
       .then(snapshot => {
         if (snapshot.exists()) {
+          let arr = [];
+          snapshot.forEach(v => {
+            arr.push({url: v.val().img});
+          });
+          setBannerViewer(arr);
           const hasil = snapshot.val();
           setBanners(hasil);
           setTunggu(5000);
@@ -63,29 +80,53 @@ const Carousel = () => {
     setBannerIndex(x);
   }, tunggu);
 
-  const renderItem = ({item, index}) => <Item url={item.img} />;
-  return (
-    <FlatList
-      data={banners}
-      renderItem={renderItem}
-      keyExtractor={item => item.id.toString()}
-      pagingEnabled={true}
-      horizontal={true}
-      ref={indexRef}
-      onScrollToIndexFailed={() => indexRef.current.scrollToIndex({index: 0})}
-      // initialNumToRender={banners.length}
+  const renderItem = ({item, index}) => (
+    <Item
+      url={item.img}
+      onPress={() => {
+        setViewerIndex(index);
+        setTampilBanner(true);
+      }}
     />
+  );
+  return (
+    <View>
+      <FlatList
+        data={banners}
+        renderItem={renderItem}
+        keyExtractor={item => item.id.toString()}
+        pagingEnabled={true}
+        horizontal={true}
+        ref={indexRef}
+        onScrollToIndexFailed={() => indexRef.current.scrollToIndex({index: 0})}
+        // initialNumToRender={banners.length}
+      />
+      <Modal
+        visible={tampilBanner}
+        transparent={true}
+        onRequestClose={() => setTampilBanner(false)}>
+        <ImageViewer
+          imageUrls={bannerViewer}
+          index={viewerIndex}
+          enableImageZoom={true}
+        />
+      </Modal>
+    </View>
   );
 };
 
 export default Carousel;
 
-const Item = ({url}) => (
-  <View>
+const Item = ({url, onPress}) => (
+  <TouchableOpacity onPress={onPress}>
     <Image style={styles.banner} source={{uri: url}} />
-  </View>
+  </TouchableOpacity>
 );
 
 const styles = StyleSheet.create({
-  banner: {width: lebar, height: lebar / 2},
+  banner: {
+    width: lebar,
+    height: lebar,
+    resizeMode: 'contain',
+  },
 });

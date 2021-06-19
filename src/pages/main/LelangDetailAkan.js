@@ -8,6 +8,7 @@ import {
   Dimensions,
   FlatList,
   Modal,
+  Linking,
 } from 'react-native';
 import database from '@react-native-firebase/database';
 import {Card} from 'react-native-elements';
@@ -19,6 +20,7 @@ import moment from 'moment';
 import storage from '@react-native-firebase/storage';
 import FastImage from 'react-native-fast-image';
 import ImageViewer from 'react-native-image-zoom-viewer';
+import ShareImg from '../../komponen/ShareImg';
 
 const lebar = Dimensions.get('window').width;
 
@@ -34,7 +36,9 @@ const LelangDetailAkan = ({navigation, route}) => {
   const [penambahanBid, setPenambahanBid] = useState(0);
   const [selisihDetik, setSelisihDetik] = useState(null);
   const [listImg, setListImg] = useState([]);
+  const [mainImage, setMainImage] = useState(null);
   const [indexImg, setIndexImg] = useState(0);
+  const [tampilShoot, setTampilShoot] = useState(false);
 
   React.useEffect(() => {
     getDt();
@@ -82,6 +86,9 @@ const LelangDetailAkan = ({navigation, route}) => {
     refImg
       .getDownloadURL()
       .then(url => {
+        if (listImg.length === 0) {
+          setMainImage({uri: url});
+        }
         setListImg(prev => [...prev, {id: imgID, url: url}]);
         imgID++;
       })
@@ -117,8 +124,44 @@ const LelangDetailAkan = ({navigation, route}) => {
         />
         <Card>
           <Text style={styles.produkNama}>{tbData.nama}</Text>
-
-          <View>
+          {tbData.deskripsi && <Text>{tbData.deskripsi}</Text>}
+          {tbData.ytb && (
+            <TouchableOpacity
+              onPress={() => {
+                Linking.openURL(tbData.ytb);
+              }}
+              style={{
+                backgroundColor: 'mistyrose',
+                padding: 10,
+                marginHorizontal: 10,
+                marginVertical: 5,
+                justifyContent: 'center',
+                flexDirection: 'row',
+              }}>
+              <Icon name="youtube" size={20} color="red" />
+              <Text style={{color: 'red', fontWeight: 'bold'}}>
+                {'  '}Lihat di YOUTUBE
+              </Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            onPress={() => {
+              setTampilShoot(true);
+            }}
+            style={{
+              backgroundColor: 'skyblue',
+              padding: 10,
+              marginHorizontal: 10,
+              marginVertical: 5,
+              justifyContent: 'center',
+              flexDirection: 'row',
+            }}>
+            <Icon name="share-alt" size={20} color="blue" />
+            <Text style={{color: 'blue', fontWeight: 'bold'}}>
+              {'  '}Bagikan Sosmed
+            </Text>
+          </TouchableOpacity>
+          <View style={{marginTop: 20}}>
             <Text style={styles.tBidKelipatan}>
               Dimulai Pada: {moment(tbData.mulai).format('DD/MM/YYYY HH:mm')}
             </Text>
@@ -146,6 +189,15 @@ const LelangDetailAkan = ({navigation, route}) => {
           enableImageZoom={true}
         />
       </Modal>
+      {tampilShoot && (
+        <ShareImg
+          src={mainImage}
+          keterangan={`Ikuti lelang ${tbData.nama} openBid ${ribuan(
+            tbData.openBid,
+          )} di aplikasi Jawa Koi Center \nhttps://google.com`}
+          setSelesai={setTampilShoot}
+        />
+      )}
     </>
   );
 };

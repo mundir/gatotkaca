@@ -1,7 +1,7 @@
 import React, {useState, useEffect} from 'react';
 import {
   StyleSheet,
-  StatusBar,
+  Alert,
   Text,
   Image,
   View,
@@ -76,27 +76,45 @@ const Produk = ({navigation, route}) => {
     setRefreshToken(new Date().getTime());
   }
 
-  function membeli(id, nama, harga) {
+  function membeli(item) {
+    let stok = item.stok;
+    console.log(stok);
     let inDt = {
-      produkID: id,
-      produkNama: nama,
-      harga: harga,
+      produkID: item.id,
+      produkNama: item.nama,
+      harga: item.harga,
+      stok: stok,
       qty: 1,
       isDibeli: false,
     };
-    const ref = database().ref(`/keranjang/${user.uid}/${id}`);
+    const ref = database().ref(`/keranjang/${user.uid}/${item.id}`);
     ref.once('value').then(snapshot => {
       if (snapshot.exists()) {
         let qty = snapshot.val().qty;
-        inDt.qty = qty + 1;
+        if (qty < stok) {
+          inDt.qty = qty + 1;
+          ref.set(inDt).then(() => {
+            ToastAndroid.showWithGravity(
+              `Menambahkan ${item.nama} kedalam keranjang. Total Qty: ${inDt.qty}`,
+              ToastAndroid.SHORT,
+              ToastAndroid.CENTER,
+            );
+          });
+        } else {
+          Alert.alert(
+            'Perhatian',
+            'Anda sudah mencapai pembelian maksimal.\nQty keranjang: ' + qty,
+          );
+        }
+      } else {
+        ref.set(inDt).then(() => {
+          ToastAndroid.showWithGravity(
+            `Menambahkan ${item.nama} kedalam keranjang. Total Qty: ${inDt.qty}`,
+            ToastAndroid.SHORT,
+            ToastAndroid.CENTER,
+          );
+        });
       }
-      ref.set(inDt).then(() => {
-        ToastAndroid.showWithGravity(
-          `Menambahkan ${nama} kedalam keranjang. Total Qty: ${inDt.qty}`,
-          ToastAndroid.SHORT,
-          ToastAndroid.CENTER,
-        );
-      });
     });
   }
 
@@ -109,7 +127,7 @@ const Produk = ({navigation, route}) => {
             produkID: item.id,
           })
         }
-        onBeli={() => membeli(item.id, item.nama, item.harga)}
+        onBeli={() => membeli(item)}
       />
     );
   };

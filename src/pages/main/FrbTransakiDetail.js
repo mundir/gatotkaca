@@ -18,11 +18,11 @@ import Tombol from '../../komponen/Tombol';
 const FrbTransakiDetail = ({navigation, route}) => {
   const txID = route.params.txID;
   const {user} = React.useContext(AuthContext);
-  const {displayName, phoneNumber, alamat} = user;
-  const userTampil = {displayName, phoneNumber, alamat};
-  const [tbParent, setTbParent] = useState([]);
+  const [tbParent, setTbParent] = useState({});
   const [tbData, setTbData] = useState([]);
+  const [totalHarga, setTotalHarga] = useState(0);
   const [total, setTotal] = useState(0);
+  const [ongkir, setOngkir] = useState(0);
   const [info, setInfo] = useState('');
 
   useEffect(() => {
@@ -41,18 +41,21 @@ const FrbTransakiDetail = ({navigation, route}) => {
       .then(snapshot => {
         if (isMount) {
           if (snapshot.exists) {
-            const {status, txDate, userID, userNama, produk} = snapshot.val();
-            setTbParent({status, txDate, userID, userNama});
+            const hasil = snapshot.val();
+            const barangs = hasil.produk;
+            setTbParent(hasil);
             let arr = [];
             let thrg = 0;
-            Object.keys(produk).forEach(v => {
-              const hasil = produk[v];
-              thrg += hasil.harga * hasil.qty;
-              arr.push(hasil);
+            Object.keys(barangs).forEach(v => {
+              const vitem = barangs[v];
+              thrg += vitem.harga * vitem.qty;
+              arr.push(vitem);
             });
-            setTotal(thrg);
+            setTotalHarga(thrg);
+            setTotal(thrg + hasil.ongkir);
             setTbData(arr);
-            console.log(arr);
+
+            console.log(hasil);
           }
         }
       });
@@ -135,37 +138,120 @@ const FrbTransakiDetail = ({navigation, route}) => {
               );
             })}
           </Card>
+          {tbParent.kurirData && (
+            <Card>
+              <Card.Title>KURIR</Card.Title>
+              <Card.Divider />
+              <View>
+                <View style={styles.row2}>
+                  <Text style={{width: 100}}>Operator</Text>
+                  <Text style={styles.tVal2}>: {tbParent.kurirData.name}</Text>
+                </View>
+                <View style={styles.row2}>
+                  <Text style={{width: 100}}>Jenis Layanan</Text>
+                  <Text style={styles.tVal2}>
+                    : {tbParent.kurirData.service} -{' '}
+                    {tbParent.kurirData.description}
+                  </Text>
+                </View>
+                <View style={styles.row2}>
+                  <Text style={{width: 100}}>Ongkir</Text>
+                  <Text style={[styles.tVal2, {color: 'red'}]}>
+                    :{' '}
+                    {tbParent.kurirData.cost
+                      ? tbParent.kurirData.cost[0].value
+                      : '-'}
+                  </Text>
+                </View>
+                <View style={styles.row2}>
+                  <Text style={{width: 120}}>Perkiraan sampai</Text>
+                  <Text style={styles.tVal2}>
+                    :{' '}
+                    {tbParent.kurirData.cost
+                      ? tbParent.kurirData.cost[0].etd
+                      : '-'}{' '}
+                    hari
+                  </Text>
+                </View>
+                <View style={styles.row2}>
+                  <Text style={{width: 100}}>Keterangan</Text>
+                  <Text style={styles.tVal2}>
+                    :{' '}
+                    {tbParent.kurirData.cost
+                      ? tbParent.kurirData.cost[0].note
+                      : '-'}
+                  </Text>
+                </View>
+              </View>
+            </Card>
+          )}
 
+          <Card>
+            <View style={styles.row}>
+              <Text>Total Harga</Text>
+              <Text>{totalHarga}</Text>
+            </View>
+            <View style={styles.row}>
+              <Text>Ongkir</Text>
+              <Text>{tbParent.ongkir}</Text>
+            </View>
+            <View style={styles.row}>
+              <Text>Total Bayar</Text>
+              <Text style={{color: 'orangered', fontWeight: 'bold'}}>
+                Rp{ribuan(tbParent.ongkir + totalHarga)}
+              </Text>
+            </View>
+          </Card>
           <Card>
             <Card.Title>DATA PENERIMA</Card.Title>
             <Card.Divider />
             <View style={styles.row2}>
               <Text style={{width: 100}}>Nama</Text>
-              <Text style={styles.tVal2}>: {userTampil.displayName}</Text>
+              <Text style={styles.tVal2}>: {user.displayName}</Text>
             </View>
             <View style={styles.row2}>
               <Text style={{width: 100}}>HP / WA</Text>
-              <Text style={styles.tVal2}>: {userTampil.phoneNumber}</Text>
+              <Text style={styles.tVal2}>: {user.phoneNumber}</Text>
+            </View>
+            <View style={styles.row2}>
+              <Text style={{width: 100}}>Provinsi</Text>
+              <Text style={styles.tVal2}>: {user.provinsi}</Text>
+            </View>
+            <View style={styles.row2}>
+              <Text style={{width: 100}}>Kab / Kota</Text>
+              <Text style={styles.tVal2}>: {user.kotaNama}</Text>
             </View>
             <View style={styles.row2}>
               <Text style={{width: 100}}>Alamat</Text>
               <Text style={styles.tVal2}>:</Text>
             </View>
-            <Text style={styles.tVal}>{userTampil.alamat}</Text>
+            {user.alamat && user.kotaID ? (
+              <Text style={styles.tVal}>{user.alamat}</Text>
+            ) : (
+              <View>
+                <Text>Perhatian!</Text>
+                <Text>
+                  pesanan tidak dapat diproses jika alamat belum diatur.
+                </Text>
+                <Text>Silahkan atur alamat di Tab AKUN</Text>
+              </View>
+            )}
           </Card>
 
-          <Card>
-            <Card.Title>INFO TRANSAKSI</Card.Title>
-            <Card.Divider />
-            <Text>{info}</Text>
-          </Card>
+          {tbParent.status === 'proses' && (
+            <Card>
+              <Card.Title>INFO TRANSAKSI</Card.Title>
+              <Card.Divider />
+              <Text>{info}</Text>
+            </Card>
+          )}
           <Card>
             {tbParent.status === 'proses' && (
               <View style={styles.row}>
                 <Tombol
-                  text="Cek Ongkir"
+                  text="INFO PEMBAYARAN"
                   warna="#075E54"
-                  onPress={() => navigation.navigate('Ongkir')}
+                  onPress={() => navigation.navigate('Pembayaran')}
                 />
                 <Tombol
                   text="Konf WA"
@@ -173,11 +259,11 @@ const FrbTransakiDetail = ({navigation, route}) => {
                   onPress={wa}
                   marginHorizontal={5}
                 />
-                <Tombol
+                {/* <Tombol
                   text="Batalkan"
                   warna="red"
                   onPress={() => batalkan(txID)}
-                />
+                /> */}
               </View>
             )}
             {tbParent.status === 'kirim' && (
@@ -202,9 +288,10 @@ const FrbTransakiDetail = ({navigation, route}) => {
               </View>
             )}
           </Card>
+          <View style={{height: 30}} />
         </ScrollView>
 
-        <View style={styles.contTotal}>
+        {/* <View style={styles.contTotal}>
           <View>
             <Text style={styles.contTextA}>Total Harga</Text>
             <Text style={styles.contTextB}>Rp{ribuan(total)}</Text>
@@ -213,7 +300,7 @@ const FrbTransakiDetail = ({navigation, route}) => {
           <TouchableOpacity style={styles.tombolProses} onPress={onOke}>
             <Text style={styles.textTombol}>OK</Text>
           </TouchableOpacity>
-        </View>
+        </View> */}
       </View>
     </>
   );

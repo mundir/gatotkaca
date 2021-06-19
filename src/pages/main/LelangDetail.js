@@ -10,7 +10,8 @@ import {
   FlatList,
   Modal,
   ActivityIndicator,
-  ToastAndroid,
+  Linking,
+  Button,
 } from 'react-native';
 import database from '@react-native-firebase/database';
 import {Card} from 'react-native-elements';
@@ -23,6 +24,8 @@ import storage from '@react-native-firebase/storage';
 import FastImage from 'react-native-fast-image';
 import ImageViewer from 'react-native-image-zoom-viewer';
 import {AuthContext} from './AuthProvider';
+import ShareImg from '../../komponen/ShareImg';
+import TanyakanWA from '../../fungsi/TanyakanWA';
 
 const lebar = Dimensions.get('window').width;
 
@@ -40,27 +43,37 @@ const LelangDetail = ({navigation, route}) => {
   const [penambahanBid, setPenambahanBid] = useState(0);
   const [selisihDetik, setSelisihDetik] = useState(0);
   const [listImg, setListImg] = useState([]);
+  const [mainImage, setMainImage] = useState(null);
   const [indexImg, setIndexImg] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  const [isSelesai, setIsSelesai] = useState(false);
+  const [isSedang, setIsSedang] = useState(false);
   const [info, setInfo] = useState('');
-
-  const refData = database().ref('/lelang/' + lelangID);
-  const refPeserta = database().ref(`/lelang/${lelangID}/peserta`);
-
+  const [tampilShoot, setTampilShoot] = useState(false);
   React.useEffect(() => {
-    getDt();
     getInfo();
     listFilesAndDirectories(reference).then(() => {
       console.log('selesai');
     });
+
+    const refData = database().ref('/lelang/' + lelangID);
+
     const getData = refData.on('value', snapshot => {
-      const hasil = snapshot.val();
       if (snapshot.exists()) {
+        const hasil = snapshot.val();
+        setTbData(hasil);
+        setPenambahanBid(hasil.kelipatan);
+        const sekarang = moment();
+        const selesai = moment(hasil.selesai);
+        var secondsDiff = selesai.diff(sekarang, 'seconds');
+        setSelisihDetik(secondsDiff);
+        secondsDiff > 0 ? setIsSedang(true) : setIsSedang(false);
         setLastBid(hasil.lastBid);
         setTempBid(hasil.lastBid + hasil.kelipatan);
       }
     });
+
+    const refPeserta = database().ref(`/lelang/${lelangID}/peserta`);
+
     const getPeserta = refPeserta.orderByChild('bid').on('value', snapshot => {
       const hasil = snapshot.val();
       if (snapshot.exists()) {
@@ -74,20 +87,20 @@ const LelangDetail = ({navigation, route}) => {
     };
   }, []);
 
-  function getDt() {
-    database()
-      .ref('/lelang/' + lelangID)
-      .once('value')
-      .then(snapshot => {
-        const hasil = snapshot.val();
-        setTbData(hasil);
-        setPenambahanBid(hasil.kelipatan);
-        const sekarang = moment();
-        const selesai = moment(hasil.selesai);
-        var secondsDiff = selesai.diff(sekarang, 'seconds');
-        setSelisihDetik(secondsDiff);
-      });
-  }
+  // function getDt() {
+  //   database()
+  //     .ref('/lelang/' + lelangID)
+  //     .once('value')
+  //     .then(snapshot => {
+  //       const hasil = snapshot.val();
+  //       setTbData(hasil);
+  //       setPenambahanBid(hasil.kelipatan);
+  //       const sekarang = moment();
+  //       const selesai = moment(hasil.selesai);
+  //       var secondsDiff = selesai.diff(sekarang, 'seconds');
+  //       setSelisihDetik(secondsDiff);
+  //     });
+  // }
 
   function getInfo() {
     database()
@@ -118,6 +131,9 @@ const LelangDetail = ({navigation, route}) => {
     refImg
       .getDownloadURL()
       .then(url => {
+        if (listImg.length === 0) {
+          setMainImage({uri: url});
+        }
         setListImg(prev => [...prev, {id: imgID, url: url}]);
         imgID++;
       })
@@ -136,8 +152,21 @@ const LelangDetail = ({navigation, route}) => {
     setTempBid(prev => prev + penambahanBid);
   }
 
+  function handleUpdateBid() {
+    Alert.alert(
+      'PERHATIAN',
+      'Apakah anda yakin akan melakukan UpBID Rp' + ribuan(tempBid),
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {text: 'OK', onPress: () => updateBid()},
+      ],
+    );
+  }
+
   function updateBid() {
-    let proses = 0;
     setIsLoading(true);
     database()
       .ref('/lelang/' + lelangID)
@@ -147,32 +176,34 @@ const LelangDetail = ({navigation, route}) => {
         lastUserNama: user.displayName,
         updateOn: new Date().toISOString(),
       })
-      .then(() => console.log('Data updated.'));
+      .then(simpanLelangPeserta());
+  }
 
+  function simpanLelangPeserta() {
     database()
       .ref(`/lelang/${lelangID}/peserta/${user.uid}`)
       .set({
+        userID: user.uid,
         nama: user.displayName,
         bid: tempBid,
-      })
-      .finally(() => {
-        proses++;
-        console.log(proses);
-        setIsLoading(false);
-      });
-
-    database()
-      .ref('/lelangTerbaru')
-      .update({
-        id: lelangID,
-        bid: tempBid,
-        namaLelang: tbData.nama,
-        namaUser: user.displayName,
         updateOn: new Date().getTime(),
       })
-      .then(() => console.log('Data updated.'));
+      .then(simpanLelangTerbaru());
   }
+
+  function simpanLelangTerbaru() {
+    const rf = database().ref('/lelangHistory').push();
+    rf.set({
+      id: lelangID,
+      bid: tempBid,
+      namaLelang: tbData.nama,
+      namaUser: user.displayName,
+      updateOn: new Date().getTime(),
+    }).then(() => setIsLoading(false));
+  }
+
   function perhatian() {
+    // setIsSedang(false);
     Alert.alert('INFO', 'Sesi lelang telah berakhir');
     navigation.goBack();
   }
@@ -193,17 +224,73 @@ const LelangDetail = ({navigation, route}) => {
   return (
     <View>
       <ScrollView>
-        <FlatList
-          data={listImg}
-          renderItem={renderItem}
-          keyExtractor={item => item.id.toString()}
-          pagingEnabled={true}
-          horizontal={true}
-          extraData={indexImg}
-        />
+        <View>
+          <FlatList
+            data={listImg}
+            renderItem={renderItem}
+            keyExtractor={item => item.id.toString()}
+            pagingEnabled={true}
+            horizontal={true}
+            extraData={indexImg}
+          />
+          {/* <View
+            style={{
+              position: 'absolute',
+              bottom: 10,
+              right: 10,
+              alignItems: 'center',
+            }}>
+            <TouchableOpacity
+              onPress={() => setTampilShoot(true)}
+              style={{
+                padding: 5,
+                backgroundColor: Konstanta.warna.dua,
+              }}>
+              <Icon name="share-alt" color="white" size={20} />
+            </TouchableOpacity>
+            <Text>Bagikan</Text>
+          </View> */}
+        </View>
         <Card>
           <Text style={styles.produkNama}>{tbData.nama}</Text>
-          {selisihDetik > 0 ? (
+          {tbData.deskripsi && <Text>{tbData.deskripsi}</Text>}
+          {tbData.ytb && (
+            <TouchableOpacity
+              onPress={() => {
+                Linking.openURL(tbData.ytb);
+              }}
+              style={{
+                backgroundColor: 'mistyrose',
+                padding: 10,
+                marginHorizontal: 10,
+                marginVertical: 5,
+                justifyContent: 'center',
+                flexDirection: 'row',
+              }}>
+              <Icon name="youtube" size={20} color="red" />
+              <Text style={{color: 'red', fontWeight: 'bold'}}>
+                {'  '}Lihat di YOUTUBE
+              </Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            onPress={() => {
+              setTampilShoot(true);
+            }}
+            style={{
+              backgroundColor: 'skyblue',
+              padding: 10,
+              marginHorizontal: 10,
+              marginVertical: 5,
+              justifyContent: 'center',
+              flexDirection: 'row',
+            }}>
+            <Icon name="share-alt" size={20} color="blue" />
+            <Text style={{color: 'blue', fontWeight: 'bold'}}>
+              {'  '}Bagikan Sosmed
+            </Text>
+          </TouchableOpacity>
+          {isSedang ? (
             <View>
               <View style={styles.boxCountdown}>
                 <CountDown
@@ -246,7 +333,7 @@ const LelangDetail = ({navigation, route}) => {
                     <ActivityIndicator size="large" color="red" />
                   ) : (
                     <TouchableOpacity
-                      onPress={updateBid}
+                      onPress={handleUpdateBid}
                       style={[styles.colInner, styles.btnBidOK]}>
                       <Text style={styles.tombolt}>BID</Text>
                     </TouchableOpacity>
@@ -255,19 +342,42 @@ const LelangDetail = ({navigation, route}) => {
               </View>
             </View>
           ) : (
-            <View>
+            <View style={{marginTop: 10}}>
               <Text style={styles.tBidKelipatan}>PEMENANG LELANG</Text>
               <Text style={styles.tBidLast}>{tbData.lastUserNama}</Text>
-              <Text style={styles.tBidLast}>BID: {tbData.lastBid}</Text>
+              <Text style={styles.tBidLast}>BID: {ribuan(tbData.lastBid)}</Text>
             </View>
           )}
         </Card>
-        {selisihDetik < 0 && (
-          <Card>
-            <Card.Title>INFO PEMENANG</Card.Title>
-            <Card.Divider />
-            <Text>{info}</Text>
-          </Card>
+        {!isSedang && tbData.lastUserID === user.uid && (
+          <View>
+            <Card>
+              <Card.Title>INFO PEMENANG</Card.Title>
+              <Card.Divider />
+              <Text>{info}</Text>
+            </Card>
+            <Card>
+              <Card.Title>PEMBAYARAN</Card.Title>
+              <Text>Silahkan lakukan pembayaran dengan metode berikut</Text>
+              <View style={{padding: 5}}>
+                <Button
+                  title="PEMBAYARAN"
+                  onPress={() => navigation.navigate('Pembayaran')}
+                />
+              </View>
+              <View style={{padding: 5}}>
+                <Button
+                  title="WA ADMIN"
+                  color="green"
+                  onPress={() =>
+                    TanyakanWA(
+                      `Pembayaran pemenang lelang ${tbData.nama} atas nama ${user.displayName}`,
+                    )
+                  }
+                />
+              </View>
+            </Card>
+          </View>
         )}
         <Card>
           <Card.Title>PESERTA LELANG</Card.Title>
@@ -314,6 +424,15 @@ const LelangDetail = ({navigation, route}) => {
         </Card>
         <View style={{height: 30}} />
       </ScrollView>
+      {tampilShoot && (
+        <ShareImg
+          src={mainImage}
+          keterangan={`Ikuti lelang ${tbData.nama} Open Bid ${ribuan(
+            tbData.openBid,
+          )} di aplikasi Jawa Koi Center \nhttps://google.com`}
+          setSelesai={setTampilShoot}
+        />
+      )}
       <Modal
         visible={showDetail}
         transparent={true}

@@ -5,7 +5,7 @@ import {
   ScrollView,
   Text,
   View,
-  Button,
+  Alert,
   Dimensions,
   TouchableOpacity,
   Linking,
@@ -17,7 +17,6 @@ import Kategori from '../../komponen/Kategori';
 import WelcomeCard from '../../komponen/WelcomeCard';
 import SplashScreen from '../../komponen/SplashScreen';
 import KontainerHomeKoi from '../../komponen/KontainerHomeKoi';
-import KontainerHomeLelang from '../../komponen/KontainerHomeLelang';
 import {tunggu} from '../../fungsi/Fungsi';
 const lebar = Dimensions.get('window').width;
 const tinggi = Dimensions.get('window').height;
@@ -25,9 +24,10 @@ const tinggi = Dimensions.get('window').height;
 const Kosong = ({navigation}) => {
   const [isInit, setIsInit] = useState(true);
 
-  React.useState(() => {
+  useEffect(() => {
     tunggu(2000).then(() => setIsInit(false));
-  });
+  }, []);
+
   return (
     <View style={{flex: 1}}>
       <Headerku
@@ -59,7 +59,6 @@ const Kosong = ({navigation}) => {
           </Text>
         </TouchableOpacity>
         <Kategori navigation={navigation} />
-        <KontainerHomeLelang navigation={navigation} />
         <KontainerHomeKoi navigation={navigation} />
         {isInit && (
           <View style={styles.splashScreen}>

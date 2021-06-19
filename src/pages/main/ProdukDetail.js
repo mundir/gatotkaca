@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useRef, useState} from 'react';
 import {
   StyleSheet,
   ScrollView,
@@ -8,8 +8,9 @@ import {
   Modal,
   Dimensions,
   TouchableOpacity,
-  Alert,
+  Button,
   ToastAndroid,
+  Alert,
 } from 'react-native';
 import {AuthContext} from './AuthProvider';
 import database from '@react-native-firebase/database';
@@ -20,6 +21,7 @@ import ImageViewer from 'react-native-image-zoom-viewer';
 import FastImage from 'react-native-fast-image';
 import Tombol from '../../komponen/Tombol';
 import Produk from './Produk';
+import ShareImg from '../../komponen/ShareImg';
 
 const lebar = Dimensions.get('window').width;
 
@@ -32,8 +34,10 @@ const ProdukDetail = ({navigation, route}) => {
   const [tbKey, setTbKey] = React.useState('');
   const [tbData, setTbData] = React.useState({});
   const [listImg, setListImg] = useState([]);
+  const [mainImage, setMainImage] = useState(null);
   const [indexImg, setIndexImg] = useState(0);
   const [showDetail, setShowDetail] = useState(false);
+  const [tampilShoot, setTampilShoot] = useState(false);
 
   React.useEffect(() => {
     getDt();
@@ -72,6 +76,9 @@ const ProdukDetail = ({navigation, route}) => {
     refImg
       .getDownloadURL()
       .then(url => {
+        if (listImg.length === 0) {
+          setMainImage({uri: url});
+        }
         setListImg(prev => [...prev, {id: imgID, url: url}]);
         imgID++;
       })
@@ -81,10 +88,12 @@ const ProdukDetail = ({navigation, route}) => {
   }
 
   function membeli() {
+    let stok = tbData.stok;
     let inDt = {
       produkID: produkID,
       produkNama: tbData.nama,
       harga: tbData.harga,
+      stok: stok,
       qty: 1,
       isDibeli: false,
     };
@@ -92,15 +101,30 @@ const ProdukDetail = ({navigation, route}) => {
     ref.once('value').then(snapshot => {
       if (snapshot.exists()) {
         let qty = snapshot.val().qty;
-        inDt.qty = qty + 1;
+        if (qty < stok) {
+          inDt.qty = qty + 1;
+          ref.set(inDt).then(() => {
+            ToastAndroid.showWithGravity(
+              `Menambahkan ${tbData.nama} kedalam keranjang. Total Qty: ${inDt.qty}`,
+              ToastAndroid.SHORT,
+              ToastAndroid.CENTER,
+            );
+          });
+        } else {
+          Alert.alert(
+            'Perhatian',
+            'Anda sudah mencapai pembelian maksimal.\nQty keranjang: ' + qty,
+          );
+        }
+      } else {
+        ref.set(inDt).then(() => {
+          ToastAndroid.showWithGravity(
+            `Menambahkan ${inDt.produkNama} kedalam keranjang. Total Qty: ${inDt.qty}`,
+            ToastAndroid.SHORT,
+            ToastAndroid.CENTER,
+          );
+        });
       }
-      ref.set(inDt).then(() => {
-        ToastAndroid.showWithGravity(
-          `Menambahkan ${tbData.nama} kedalam keranjang. Total Qty: ${inDt.qty}`,
-          ToastAndroid.SHORT,
-          ToastAndroid.CENTER,
-        );
-      });
     });
   }
 
@@ -120,23 +144,32 @@ const ProdukDetail = ({navigation, route}) => {
   );
   return (
     <>
-      <ScrollView>
-        <FlatList
-          data={listImg}
-          renderItem={renderItem}
-          keyExtractor={item => item.id.toString()}
-          pagingEnabled={true}
-          horizontal={true}
-          extraData={indexImg}
+      {tampilShoot && (
+        <ShareImg
+          src={mainImage}
+          keterangan={`dapatkan ${tbData.nama} dengan harga ${ribuan(
+            tbData.harga,
+          )} di aplikasi Jawa Koi Center \nhttps://google.com`}
+          setSelesai={setTampilShoot}
         />
+      )}
+      <ScrollView>
+        <View>
+          <FlatList
+            data={listImg}
+            renderItem={renderItem}
+            keyExtractor={item => item.id.toString()}
+            pagingEnabled={true}
+            horizontal={true}
+            extraData={indexImg}
+          />
+        </View>
         <View style={styles.container}>
           <View style={styles.card}>
             <Text style={styles.produkNama}>{tbData.nama}</Text>
             <View style={styles.row}>
-              <Text style={styles.tterjual}>Stok: {tbData.stok}</Text>
-              <Text style={styles.tterjual}>
-                Terjual: {tbData.terjual ? tbData.terjual : 0}
-              </Text>
+              <Text>Stok: {tbData.stok}</Text>
+              <Text>Terjual: {tbData.terjual ? tbData.terjual : 0}</Text>
             </View>
             <View style={styles.row}>
               <Text style={styles.tharga}>
@@ -151,9 +184,26 @@ const ProdukDetail = ({navigation, route}) => {
               <Text style={styles.tdeskripsi}>{tbData.deskripsi} </Text>
             </View>
           )}
-          <Tombol text="BELI" warna={Konstanta.warna.satu} onPress={membeli} />
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              paddingHorizontal: 20,
+            }}>
+            <View style={{width: 150}}>
+              <Button title="SHARE" onPress={() => setTampilShoot(true)} />
+            </View>
+            <View style={{width: 150}}>
+              <Button
+                title="BELI"
+                color={Konstanta.warna.satu}
+                onPress={membeli}
+              />
+            </View>
+          </View>
         </View>
       </ScrollView>
+
       <Modal
         visible={showDetail}
         transparent={true}
@@ -193,8 +243,8 @@ const styles = StyleSheet.create({
     color: Konstanta.warna.disabled,
     textDecorationLine: 'line-through',
   },
-  tharga: {fontSize: 18, color: Konstanta.warna.dua, fontWeight: 'bold'},
-  tjudul: {fontWeight: 'bold', fontSize: 18, color: Konstanta.warna.satu},
+  tharga: {fontSize: 18, color: Konstanta.warna.satu, fontWeight: 'bold'},
+  tjudul: {fontWeight: 'bold', fontSize: 18, color: 'gray'},
   tdeskripsi: {color: Konstanta.warna.text},
   tombol: {
     height: 40,

@@ -21,7 +21,6 @@ import moment from 'moment';
 import {generateid} from '../../fungsi/Fungsi';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import noImage from '../../assets/noImage.jpg';
-import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
 import Konstanta from '../../fungsi/Konstanta';
 import database from '@react-native-firebase/database';
 import storage from '@react-native-firebase/storage';
@@ -30,7 +29,7 @@ import AmbilFoto from '../../komponen/AmbilFoto';
 
 const lebar = 800;
 const tinggi = Math.floor(lebar * 1.3);
-const buttonStatus = ['sedang', 'akan', 'selesai'];
+const buttonStatus = ['akan', 'sedang', 'selesai'];
 let btIndex = 0;
 
 const LelangAdd = () => {
@@ -150,12 +149,14 @@ const LelangAdd = () => {
       .set({
         nama: tbData.nama,
         jenis: tbData.jenis,
+        ytb: tbData.ytb,
         openBid: Number(tbData.openBid),
         lastBid: Number(tbData.openBid),
         kelipatan: Number(tbData.kelipatan),
         mulai: moment(tbData.mulai).toISOString(),
         selesai: moment(tbData.selesai).toISOString(),
         status: tbData.status,
+        deskripsi: tbData.deskripsi,
         updateOn: new Date().getTime(),
       })
       .then(() => {
@@ -186,6 +187,11 @@ const LelangAdd = () => {
             label="Jenis"
             value={tbData.jenis}
             onChangeText={text => updateTbData('jenis', text)}
+          />
+          <Input
+            label="Link Youtube"
+            value={tbData.ytb}
+            onChangeText={text => updateTbData('ytb', text)}
           />
           <Input
             label="OpenBid"
@@ -226,7 +232,7 @@ const LelangAdd = () => {
             value={moment(tbData.selesai).format('DD/MM/YYYY HH:mm')}
             disabled={true}
           />
-          <Text style={styles.label}>Status {tbData.status}</Text>
+          <Text style={styles.label}>Status: {tbData.status}</Text>
           <ButtonGroup
             onPress={i => updateButtonStatus(i)}
             selectedIndex={btIndex}

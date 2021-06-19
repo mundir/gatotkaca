@@ -24,7 +24,7 @@ const KontainerHomeLelang = ({navigation}) => {
 
   return (
     <View>
-      {tbData && Object.keys(tbData).length > 0 && (
+      {tbData && Object.keys(tbData).length > 0 ? (
         <View style={styles.card}>
           <View style={styles.header}>
             <Text style={styles.theader}>LELANG TERBARU</Text>
@@ -45,6 +45,8 @@ const KontainerHomeLelang = ({navigation}) => {
             })}
           </View>
         </View>
+      ) : (
+        <NoData />
       )}
     </View>
   );
@@ -63,3 +65,18 @@ const styles = StyleSheet.create({
   },
   theader: {fontWeight: 'bold', color: 'orangered', fontSize: 16},
 });
+
+const NoData = () => (
+  <View
+    style={{
+      alignItems: 'center',
+      padding: 30,
+      backgroundColor: 'white',
+      margin: 10,
+      borderRadius: 10,
+    }}>
+    <Text style={{color: 'red', fontStyle: 'italic'}}>
+      Maaf, hari ini tidak ada Lelang
+    </Text>
+  </View>
+);

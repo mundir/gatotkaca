@@ -1,36 +1,45 @@
 import React, {useState, useEffect} from 'react';
 import {
-  Button,
+  Alert,
   StyleSheet,
   Text,
   View,
   TouchableOpacity,
-  Modal,
+  Image,
   ScrollView,
   Pressable,
 } from 'react-native';
-import {Card, Input} from 'react-native-elements';
+import {Card, ButtonGroup} from 'react-native-elements';
 import Headerku from '../../komponen/Headerku';
 import Konstanta from '../../fungsi/Konstanta';
 import {ribuan} from '../../fungsi/Fungsi';
 import {AuthContext} from './AuthProvider';
 import database from '@react-native-firebase/database';
+import IconJne from '../../assets/jne.jpg';
+import IconPos from '../../assets/pos.jpg';
+import IconTiki from '../../assets/tiki.jpg';
+import Loading from '../../komponen/Loading';
+
+const textPengiriman = ['jne', 'pos', 'tiki'];
+const berat = 1000;
 
 const BuatPesanan = ({navigation}) => {
   const {user} = React.useContext(AuthContext);
-  const {displayName, phoneNumber, alamat} = user;
-  const initUSer = {displayName, phoneNumber, alamat};
   const [tbData, setTbData] = useState([]);
   const [total, setTotal] = useState(0);
-  const [modalAlamat, setModalAlamat] = useState(false);
-  const [userTampil, setUserTampil] = useState(initUSer);
-  const [userEdit, setUserEdit] = useState(initUSer);
+  const [harga, setHarga] = useState(0);
+  const [indexJasaKirim, setIndexJasaKirim] = useState(0);
   const [info, setInfo] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [dtOngkir, setDtOngkir] = useState([]);
+  const [ongkir, setOngkir] = useState(0);
+  const [selectedPengirim, setSelectedPengirim] = useState({});
 
   useEffect(() => {
     let isMount = true;
     getDt(isMount);
     getDtInfo(isMount);
+    getCost(berat, textPengiriman[indexJasaKirim]);
     return () => {
       isMount = false;
     };
@@ -53,6 +62,7 @@ const BuatPesanan = ({navigation}) => {
               arr.push(hasil);
             });
             setTbData(arr);
+            setHarga(tharga);
             setTotal(tharga);
           }
         }
@@ -72,22 +82,47 @@ const BuatPesanan = ({navigation}) => {
       });
   }
 
-  function onEditUser() {
-    const dbRef = database().ref('/users/' + user.uid);
-    dbRef
-      .update(userEdit)
-      .then(() => {
-        setUserTampil({...userEdit});
+  function getCost(brt, kurir) {
+    setIsLoading(true);
+    fetch('https://api.rajaongkir.com/starter/cost', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        key: '73393cdc6d1f5ae874fbfd442938d649',
+      },
+      body: JSON.stringify({
+        origin: '255',
+        destination: user.kotaID,
+        weight: brt,
+        courier: kurir,
+      }),
+    })
+      .then(response => response.json())
+      .then(json => {
+        const hasil = json.rajaongkir.results[0];
+        setDtOngkir(hasil);
+        console.log(hasil.costs);
       })
-      .catch(er => console.log(er));
-    setModalAlamat(false);
+      .catch(error => {
+        console.error(error);
+      })
+      .finally(() => setIsLoading(false));
   }
 
   function onOke() {
+    if (!ongkir) {
+      Alert.alert('PERHATIAN', 'Silahkan pilih jasa kirim');
+      return;
+    }
     let newOb = {
       userID: user.uid,
       userNama: user.displayName,
       status: 'proses',
+      ongkir: ongkir,
+      kurirKode: selectedPengirim.code,
+      kurirService: selectedPengirim.service,
+      kurirData: selectedPengirim,
       txDate: new Date().getTime(),
     };
     let produk = {};
@@ -96,6 +131,7 @@ const BuatPesanan = ({navigation}) => {
       hapusKeranjang(v.produkID);
     });
     newOb.produk = produk;
+    console.log(newOb);
     const newTransaksi = database().ref('/transaksi').push();
     newTransaksi.set(newOb).then(() => navigation.navigate('Transaksi'));
   }
@@ -108,7 +144,21 @@ const BuatPesanan = ({navigation}) => {
         console.log('barhasil delete row keranjang');
       });
   }
+  function handlePengirim(i) {
+    setIndexJasaKirim(i);
+    getCost(1000, textPengiriman[i]);
+  }
 
+  function onPressJenisLayanan(code, name, dt) {
+    setSelectedPengirim({...dt, code, name});
+    setOngkir(dt.cost[0].value);
+    setTotal(harga + dt.cost[0].value);
+  }
+
+  const jasa1 = () => <Image style={styles.imgIcon} source={IconJne} />;
+  const jasa2 = () => <Image style={styles.imgIcon} source={IconPos} />;
+  const jasa3 = () => <Image style={styles.imgIcon} source={IconTiki} />;
+  const opsiKirim = [{element: jasa1}, {element: jasa2}, {element: jasa3}];
   let hitung = 0;
   return (
     <>
@@ -142,26 +192,106 @@ const BuatPesanan = ({navigation}) => {
             <Card.Divider />
             <View style={styles.row2}>
               <Text style={{width: 100}}>Nama</Text>
-              <Text style={styles.tVal2}>: {userTampil.displayName}</Text>
+              <Text style={styles.tVal2}>: {user.displayName}</Text>
             </View>
             <View style={styles.row2}>
               <Text style={{width: 100}}>HP / WA</Text>
-              <Text style={styles.tVal2}>: {userTampil.phoneNumber}</Text>
+              <Text style={styles.tVal2}>: {user.phoneNumber}</Text>
+            </View>
+            <View style={styles.row2}>
+              <Text style={{width: 100}}>Provinsi</Text>
+              <Text style={styles.tVal2}>: {user.provinsi}</Text>
+            </View>
+            <View style={styles.row2}>
+              <Text style={{width: 100}}>Kab / Kota</Text>
+              <Text style={styles.tVal2}>: {user.kotaNama}</Text>
             </View>
             <View style={styles.row2}>
               <Text style={{width: 100}}>Alamat</Text>
               <Text style={styles.tVal2}>:</Text>
             </View>
-            <Text style={styles.tVal}>{userTampil.alamat}</Text>
-            <Card.Divider />
-            <View
-              style={{
-                alignItems: 'flex-end',
-              }}>
-              <View style={{width: 130}}>
-                <Button title="Edit" onPress={() => setModalAlamat(true)} />
+            {user.alamat && user.kotaID ? (
+              <Text style={styles.tVal}>{user.alamat}</Text>
+            ) : (
+              <View>
+                <Text>Perhatian!</Text>
+                <Text>
+                  pesanan tidak dapat diproses jika alamat belum diatur.
+                </Text>
+                <Text>Silahkan atur alamat di Tab AKUN. TAP DISINI</Text>
+              </View>
+            )}
+          </Card>
+          <Card>
+            <Card.Title>JASA PENGIRIMAN</Card.Title>
+            <View>
+              <View style={styles.row2}>
+                <Text style={{width: 100}}>Operator</Text>
+                <Text style={styles.tVal2}>: {selectedPengirim.name}</Text>
+              </View>
+              <View style={styles.row2}>
+                <Text style={{width: 100}}>Jenis Layanan</Text>
+                <Text style={styles.tVal2}>
+                  : {selectedPengirim.service} - {selectedPengirim.description}
+                </Text>
+              </View>
+              <View style={styles.row2}>
+                <Text style={{width: 100}}>Ongkir</Text>
+                <Text style={[styles.tVal2, {color: 'red'}]}>
+                  :{' '}
+                  {selectedPengirim.cost ? selectedPengirim.cost[0].value : '-'}
+                </Text>
+              </View>
+              <View style={styles.row2}>
+                <Text style={{width: 120}}>Perkiraan sampai</Text>
+                <Text style={styles.tVal2}>
+                  : {selectedPengirim.cost ? selectedPengirim.cost[0].etd : '-'}{' '}
+                  hari
+                </Text>
+              </View>
+              <View style={styles.row2}>
+                <Text style={{width: 100}}>Keterangan</Text>
+                <Text style={styles.tVal2}>
+                  :{' '}
+                  {selectedPengirim.cost ? selectedPengirim.cost[0].note : '-'}
+                </Text>
               </View>
             </View>
+
+            <ButtonGroup
+              onPress={i => handlePengirim(i)}
+              selectedIndex={indexJasaKirim}
+              buttons={opsiKirim}
+              containerStyle={{height: 50}}
+            />
+            {dtOngkir.costs &&
+              dtOngkir.costs.map((v, i) => (
+                <View
+                  key={i}
+                  style={{
+                    padding: 5,
+                    borderColor: 'gray',
+                    borderWidth: 0.7,
+                    borderRadius: 5,
+                    marginBottom: 5,
+                  }}>
+                  <TouchableOpacity
+                    onPress={() =>
+                      onPressJenisLayanan(dtOngkir.code, dtOngkir.name, v)
+                    }>
+                    <Text>
+                      {v.service} - {v.description}
+                    </Text>
+                    {v.cost.map((vx, ix) => (
+                      <View key={ix} style={{marginLeft: 10}}>
+                        <Text>Ongkir: {vx.value}</Text>
+                        <Text>Perkiraan sampai: {vx.etd} hari</Text>
+                        <Text>Keterangan: {vx.note}</Text>
+                      </View>
+                    ))}
+                  </TouchableOpacity>
+                </View>
+              ))}
           </Card>
 
           <Card>
@@ -173,61 +303,16 @@ const BuatPesanan = ({navigation}) => {
 
         <View style={styles.contTotal}>
           <View>
-            <Text style={styles.contTextA}>Total Harga</Text>
+            <Text style={styles.contTextA}>Total Bayar</Text>
             <Text style={styles.contTextB}>Rp{ribuan(total)}</Text>
           </View>
 
           <TouchableOpacity style={styles.tombolProses} onPress={onOke}>
-            <Text style={styles.textTombol}>OK</Text>
+            <Text style={styles.textTombol}>Buat Pesanan</Text>
           </TouchableOpacity>
         </View>
       </View>
-      <Modal
-        animationType="slide"
-        transparent={false}
-        visible={modalAlamat}
-        onRequestClose={() => {
-          setModalAlamat(false);
-        }}>
-        <View style={styles.modal}>
-          <View style={styles.cardEdit}>
-            <Input
-              label="Nama"
-              placeholder="Nama..."
-              value={userEdit.displayName}
-              onChangeText={value =>
-                setUserEdit(prev => ({...prev, displayName: value}))
-              }
-            />
-            <Input
-              label="HP/ WA"
-              placeholder="Nomor HP / WA"
-              value={userEdit.phoneNumber}
-              onChangeText={value =>
-                setUserEdit(prev => ({...prev, phoneNumber: value}))
-              }
-            />
-            <Text>Alamat:</Text>
-            <Input
-              placeholder="Alamat..."
-              numberOfLines={4}
-              multiline={true}
-              value={userEdit.alamat}
-              onChangeText={value =>
-                setUserEdit(prev => ({...prev, alamat: value}))
-              }
-            />
-
-            <Button title="Simpan" onPress={onEditUser} />
-          </View>
-        </View>
-        <Pressable
-          onPress={() => {
-            setModalAlamat(false);
-          }}
-          style={styles.modalOut}
-        />
-      </Modal>
+      {isLoading && <Loading />}
     </>
   );
 };

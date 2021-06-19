@@ -15,7 +15,7 @@ import moment from 'moment';
 import storage from '@react-native-firebase/storage';
 
 const windowWidth = Dimensions.get('window').width;
-const setengah = windowWidth / 2 - 2;
+const setengah = windowWidth * 0.4;
 
 const CardLelangAkan = ({dtkey, data, onPressDetail}) => {
   const sekarang = moment();
@@ -68,10 +68,12 @@ const CardLelangAkan = ({dtkey, data, onPressDetail}) => {
     var m = Math.floor((seconds % 3600) / 60);
     var s = Math.floor(seconds % 60);
 
-    return [d, h, m, s]
+    const str = [h, m, s]
       .map(v => (v < 10 ? '0' + v : v))
       .filter((v, i) => v !== '00' || i > 0)
       .join(':');
+    const newStr = d > 0 ? d + ' hari ' + str : str;
+    return newStr;
   };
 
   return (
@@ -92,8 +94,11 @@ const CardLelangAkan = ({dtkey, data, onPressDetail}) => {
             {data.nama}
           </Text>
           <Text style={styles.teksterjual}>Jenis: {data.jenis}</Text>
-          <View>
-            <Text>Mulai pada {tampilHitung}</Text>
+          <Text style={styles.teksterjual}>{data.deskripsi}</Text>
+          <View style={{alignItems: 'center', padding: 10}}>
+            <Text style={{fontWeight: 'bold', fontSize: 16}}>
+              {tampilHitung} lagi
+            </Text>
           </View>
 
           <View style={styles.kotakMargin}>
@@ -112,17 +117,19 @@ export default CardLelangAkan;
 
 const styles = StyleSheet.create({
   cardProduct: {
-    width: setengah,
     padding: 5,
+    backgroundColor: 'white',
   },
   cardProductBorder: {
     borderWidth: 0.6,
-    borderColor: Konstanta.warna.disabled,
+    borderColor: 'gray',
     borderRadius: 10,
     padding: 5,
+    flexDirection: 'row',
   },
-  productImgWrap: {height: setengah, borderRadius: 10},
-  productImg: {height: setengah},
+  productImgWrap: {borderRadius: 10},
+  productImg: {height: setengah, width: setengah},
+  ProductInfoCard: {paddingHorizontal: 10, flex: 1},
   wadahTombolBawah: {
     marginTop: 3,
     alignItems: 'center',
@@ -146,8 +153,10 @@ const styles = StyleSheet.create({
   textTombol: {color: 'white'},
   teksProduct: {
     color: Konstanta.warna.satu,
-    height: 37,
+    fontWeight: 'bold',
+    fontSize: 16,
     textAlign: 'justify',
+    marginBottom: 5,
   },
   teksterjual: {color: Konstanta.warna.text, fontSize: 12},
   row: {flexDirection: 'row', justifyContent: 'space-between'},
@@ -171,9 +180,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 18,
   },
-  kotakMargin: {flex: 1},
+  kotakMargin: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   kotakHarga: {
-    padding: 2,
+    paddingHorizontal: 20,
+    paddingVertical: 5,
     alignItems: 'center',
     borderRadius: 3,
     borderWidth: 0.5,

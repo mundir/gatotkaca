@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import {Input, BottomSheet, ListItem, Button} from 'react-native-elements';
 import {generateid} from '../../fungsi/Fungsi';
-import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
 import Konstanta from '../../fungsi/Konstanta';
 import database from '@react-native-firebase/database';
 import storage from '@react-native-firebase/storage';
